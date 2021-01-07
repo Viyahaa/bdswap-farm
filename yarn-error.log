@@ -1,0 +1,47 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/bin/yarn add wanchain-sc-sdk
+
+PATH: 
+  /Users/molin/bin:/usr/local/bin:/Library/Frameworks/Python.framework/Versions/3.8/bin:/Users/molin/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/usr/local/share/dotnet:/opt/X11/bin:~/.dotnet/tools:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Users/molin/bin:/Library/Frameworks/Python.framework/Versions/3.8/bin:/Users/molin/.cargo/bin:/Users/molin/gopath/bin:/Users/molin/gopath/bin:/Users/molin/.cargo/bin
+
+Yarn version: 
+  1.17.3
+
+Node version: 
+  14.8.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: connect ECONNREFUSED 151.101.0.133:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1144:16)
+
+npm manifest: 
+  {
+    "name": "WanSwap-farm",
+    "version": "1.0.0",
+    "license": "MIT",
+    "dependencies": {
+      "@openzeppelin/contracts": "^3.1.0",
+      "@openzeppelin/test-helpers": "^0.5.9",
+      "solidity-coverage": "0.7.4",
+      "truffle": "5.1.22",
+      "truffle-flattener": "^1.4.4",
+      "truffle-plugin-verify": "^0.4.0",
+      "truffle-privatekey-provider": "^1.5.0",
+      "wanchain-truffle-sdk": "^1.0.0"
+    },
+    "scripts": {
+      "compile": "truffle compile",
+      "test": "truffle test",
+      "migrate": "truffle migrate",
+      "coverage": "truffle run coverage"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

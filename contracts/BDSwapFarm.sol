@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./WaspToken.sol";
+import "./BDSwapToken.sol";
 
 
 
-// WanSwapFarm is the master of WASP. He can make WASP and he is a fair guy.
+// BDSwapFarm is the master of BDS. He can make BDS and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once WASP is sufficiently
+// will be transferred to a governance smart contract once BDS is sufficiently
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract WanSwapFarm is Ownable {
+contract BDSwapFarm is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -29,10 +29,10 @@ contract WanSwapFarm is Ownable {
         // We do some fancy math here. Basically, any point in time, the amount of WASPs
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accWaspPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accRewardPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accWaspPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accRewardPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -43,22 +43,22 @@ contract WanSwapFarm is Ownable {
         IERC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. WASPs to distribute per block.
         uint256 lastRewardBlock;  // Last block number that WASPs distribution occurs.
-        uint256 accWaspPerShare;  // Accumulated WASPs per share, times 1e12. See below.
+        uint256 accRewardPerShare;  // Accumulated WASPs per share, times 1e12. See below.
     }
 
-    // The WASP TOKEN!
-    WaspToken public wasp;
+    // The BDS TOKEN!
+    BDSwapToken public rewardToken;
     // Dev address.
     address public devaddr;
-    // Block number when test WASP period ends.
+    // Block number when test BDS period ends.
     uint256 public testEndBlock;
-    // Block number when bonus WASP period ends.
+    // Block number when bonus BDS period ends.
     uint256 public bonusEndBlock;
-    // Block number when bonus WASP period ends.
+    // Block number when bonus BDS period ends.
     uint256 public allEndBlock;
-    // WASP tokens created per block.
-    uint256 public waspPerBlock;
-    // Bonus muliplier for early wasp makers.
+    // BDS tokens created per block.
+    uint256 public rewardPerBlock;
+    // Bonus muliplier for early rewardToken makers.
     uint256 public constant BONUS_MULTIPLIER = 5;
 
     // Info of each pool.
@@ -67,7 +67,7 @@ contract WanSwapFarm is Ownable {
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when WASP mining starts.
+    // The block number when BDS mining starts.
     uint256 public startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -75,17 +75,17 @@ contract WanSwapFarm is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
-        WaspToken _wasp,
+        BDSwapToken _rewardToken,
         address _devaddr,
-        uint256 _waspPerBlock,
+        uint256 _rewardPerBlock,
         uint256 _startBlock,
         uint256 _testEndBlock,
         uint256 _bonusEndBlock,
         uint256 _allEndBlock
     ) public {
-        wasp = _wasp;
+        rewardToken = _rewardToken;
         devaddr = _devaddr;
-        waspPerBlock = _waspPerBlock;
+        rewardPerBlock = _rewardPerBlock;
         startBlock = _startBlock;
         testEndBlock = _testEndBlock;
         bonusEndBlock = _bonusEndBlock;
@@ -108,11 +108,11 @@ contract WanSwapFarm is Ownable {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accWaspPerShare: 0
+            accRewardPerShare: 0
         }));
     }
 
-    // Update the given pool's WASP allocation point. Can only be called by the owner.
+    // Update the given pool's BDS allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
@@ -159,18 +159,18 @@ contract WanSwapFarm is Ownable {
         }
     }
 
-    // View function to see pending WASPs on frontend.
-    function pendingWasp(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending reward on frontend.
+    function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accWaspPerShare = pool.accWaspPerShare;
+        uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 waspReward = multiplier.mul(waspPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accWaspPerShare = accWaspPerShare.add(waspReward.mul(1e12).div(lpSupply));
+            uint256 reward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accRewardPerShare = accRewardPerShare.add(reward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accWaspPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accRewardPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -193,38 +193,38 @@ contract WanSwapFarm is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 waspReward = multiplier.mul(waspPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        wasp.mint(devaddr, waspReward.div(20));
-        wasp.mint(address(this), waspReward);
-        pool.accWaspPerShare = pool.accWaspPerShare.add(waspReward.mul(1e12).div(lpSupply));
+        uint256 reward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        rewardToken.mint(devaddr, reward.div(20));
+        rewardToken.mint(address(this), reward);
+        pool.accRewardPerShare = pool.accRewardPerShare.add(reward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to WanSwapFarm for WASP allocation.
+    // Deposit LP tokens to BDSwapFarm for BDS allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accWaspPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accRewardPerShare).div(1e12).sub(user.rewardDebt);
             safeWaspTransfer(msg.sender, pending);
         }
         if(_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accWaspPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRewardPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from WanSwapFarm.
+    // Withdraw LP tokens from BDSwapFarm.
     function withdraw(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accWaspPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accRewardPerShare).div(1e12).sub(user.rewardDebt);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accWaspPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRewardPerShare).div(1e12);
         safeWaspTransfer(msg.sender, pending);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
@@ -241,13 +241,13 @@ contract WanSwapFarm is Ownable {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe wasp transfer function, just in case if rounding error causes pool to not have enough WASPs.
+    // Safe rewardToken transfer function, just in case if rounding error causes pool to not have enough WASPs.
     function safeWaspTransfer(address _to, uint256 _amount) internal {
-        uint256 waspBal = wasp.balanceOf(address(this));
+        uint256 waspBal = rewardToken.balanceOf(address(this));
         if (_amount > waspBal) {
-            wasp.transfer(_to, waspBal);
+            rewardToken.transfer(_to, waspBal);
         } else {
-            wasp.transfer(_to, _amount);
+            rewardToken.transfer(_to, _amount);
         }
     }
 
