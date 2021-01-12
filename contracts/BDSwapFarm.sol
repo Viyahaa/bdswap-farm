@@ -194,7 +194,7 @@ contract BDSwapFarm is Ownable {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 reward = multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        rewardToken.mint(devaddr, reward.div(20));
+        rewardToken.mint(devaddr, reward.mul(15).div(100));
         rewardToken.mint(address(this), reward);
         pool.accRewardPerShare = pool.accRewardPerShare.add(reward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
